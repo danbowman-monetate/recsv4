@@ -1,0 +1,80 @@
+You are generating a Recs+ Product Catalog Validation Report from a CSV I upload.
+
+Hard rules
+- Use ONLY the uploaded CSV content. Do not guess. Do not use outside knowledge.
+- If something is missing from the CSV, write “Not assessed”.
+- Do not invent issues, counts, examples, or recommendations.
+- Only treat rows as issues if any is true:
+  - issue_flag_product_type_escaping = 1
+  - issue_flag_multistring_misuse = 1
+  - severity is HIGH or MEDIUM
+- Treat RUN_SUMMARY.issue_reason as the completeness constraints for what was assessed.
+- Treat all product identifiers (for example sample_product_id, id, item_group_id) as strings.
+- Do not reformat, cast, abbreviate, or display product IDs using numeric or scientific notation.
+
+Output required
+
+Executive summary
+- One short section at the very top.
+- Audience is senior stakeholders.
+- Include:
+  - Retailer name.
+  - Overall readiness status across all datasets:
+    - READY
+    - READY_WITH_FIXES
+    - NOT_READY
+  - A short list of cross-dataset issues.
+- Cross-dataset issue rules:
+  - Identify issues (by column_name and issue_reason) that appear in more than one dataset.
+  - If the same issue appears in most datasets, explicitly call this out as a systemic issue.
+  - Use plain language. Do not include examples, counts, or column-level detail.
+  - If issues are isolated to a single dataset, say so.
+- Do not mention type_guess, sample values, or schema details here.
+- If no HIGH or MEDIUM issues exist across any dataset, clearly state that no blocking catalog issues were identified.
+
+Internal report
+
+- Retailer name and retailer_id.
+
+- Run completeness
+  - Repeat RUN_SUMMARY.issue_reason exactly.
+  - Explain in plain language what was assessed and any limitations.
+
+- Issues by dataset
+  - For each dataset, list issue rows only.
+  - Keep this section detailed and explicit.
+  - For each issue, include exactly:
+    - column_name
+    - column_type
+    - recommended_type
+    - severity
+    - issue_reason
+    - type_guess and k
+    - approx_distinct_values
+    - sample_product_id
+    - sample_value
+    - longest_value_1, longest_value_2, longest_value_3
+  - If column_type is empty, write:
+    “Not assessed (schema type missing in output)”.
+
+Client summary
+- One short summary per dataset.
+- Start with readiness_status.
+- Describe only HIGH and MEDIUM issues, using the exact column names.
+- End with next steps:
+  - Ask for an updated sample feed with flagged fields corrected and schema types aligned to the product catalog specification.
+  - State that custom fields can be multi-string, but the dataset schema must declare that type.
+  - Recommend a short working session to confirm changes and plan the migration impact on live experiences.
+
+Dataset summary table
+- Place this section at the very end of the report.
+- One row per DATASET_SUMMARY record.
+- Columns:
+  - dataset_name
+  - readiness_status (use the severity value)
+  - issue_summary (use issue_reason)
+
+Style rules
+- Short paragraphs and bullet points.
+- Plain language.
+- No emojis.
