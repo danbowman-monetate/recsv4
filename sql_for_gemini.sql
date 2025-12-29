@@ -2,6 +2,7 @@
    Recs+ catalog field analysis
    One-query, retailer-scoped
    Output is designed for CSV export and Gemini formatting
+   Note: custom columns that are always null are not included.
    ========================================================= */
 
 WITH params AS (
@@ -178,9 +179,18 @@ schema_cols AS (
     c.dataset_name,
     c.column_name,
     c.column_type
-  FROM developer.jjp_config_dataset_column c
+  FROM (
+    /* jjp_config_dataset_column has duplicate column_names: dedupe */
+    SELECT retailer_id, dataset_id, dataset_name, column_name, column_type,
+        ROW_NUMBER() OVER (
+        PARTITION BY retailer_id, dataset_id, column_name
+        ORDER BY lower(column_name)
+        ) AS rn
+    FROM developer.jjp_config_dataset_column
+  ) AS c
   JOIN params p
     ON c.retailer_id = p.retailer_id
+    AND rn = 1
 ),
 
 /* Join everything */
@@ -207,7 +217,7 @@ joined AS (
   LEFT JOIN schema_cols sc
     ON gc.retailer_id = sc.retailer_id
    AND gc.dataset_id  = sc.dataset_id
-   AND gc.column_name = sc.column_name
+   AND UPPER(gc.column_name) = UPPER(sc.column_name)
   LEFT JOIN col_summary cs
     ON gc.retailer_id = cs.retailer_id
    AND gc.dataset_id  = cs.dataset_id
