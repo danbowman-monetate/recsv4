@@ -176,21 +176,29 @@ schema_cols AS (
   SELECT
     c.retailer_id,
     c.dataset_id,
-    c.dataset_name,
+    c_jjp.dataset_name,
     c.column_name,
     c.column_type
   FROM (
-    /* jjp_config_dataset_column has duplicate column_names: dedupe */
-    SELECT retailer_id, dataset_id, dataset_name, column_name, column_type,
+    /* (jjp_)config_dataset_column has duplicate column_names: dedupe and pull dataset_name from jjp */  
+    SELECT retailer_id, dataset_id, column_name, data_type as column_type,
         ROW_NUMBER() OVER (
-        PARTITION BY retailer_id, dataset_id, column_name
+        PARTITION BY retailer_id, dataset_id, lower(column_name)
         ORDER BY lower(column_name)
         ) AS rn
-    FROM developer.jjp_config_dataset_column
+    FROM config_dataset_column
   ) AS c
+  LEFT JOIN (
+    SELECT DISTINCT retailer_id, dataset_id, dataset_name
+    FROM developer.jjp_config_dataset_column
+  ) AS c_jjp
+    ON c_jjp.retailer_id = c.retailer_id
+    AND c_jjp.dataset_id = c.dataset_id
   JOIN params p
     ON c.retailer_id = p.retailer_id
     AND rn = 1
+  JOIN config_dataset_info i
+    ON c.dataset_id = i.dataset_id
 ),
 
 /* Join everything */
